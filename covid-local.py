@@ -50,6 +50,7 @@ def pad_series(recs):
   return out
 
 def write_graph(region_name, region_type, records):
+  print "Graph", region_name, region_type
   records = sorted(records, key = lambda rec: rec[1])
   records = pad_series(records)
   records = [(date_str, date, cases, seven_day_avg(i, records)) for (i, (date_str, date, cases)) in enumerate(records)]
@@ -66,6 +67,7 @@ def write_graph(region_name, region_type, records):
   plt.close()
 
 def write_index(regions):
+  print "Write index"
   regions_by_type = dict()
   for (region_name, region_type) in regions.iterkeys():
     if region_type not in regions_by_type:
