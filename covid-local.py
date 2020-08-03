@@ -97,6 +97,7 @@ def write_index(regions):
   for ordering in ("index", "peak", "recent_cases", "recent_rel_peak"):
     with open(os.path.join(outdir, ordering + ".html"), "w") as f:
       f.write("<html><body><h1>Covid cases in England by region</h1>\n")
+      f.write('<p><a href="https://coronavirus.data.gov.uk/">Source data</a> -- <a href="https://github.com/smowton/covid-local">source code</a></p>\n')
       for (type, regions) in sorted(regions_by_type.iteritems(), key = lambda kv: len(kv[1])):
         f.write("<h2>Region type: %s</h2>\n<table>\n" % type)
         f.write('<tr><td><a href="index.html">Name</a></td><td><a href="peak.html">Peak date</a></td><td><a href="recent_cases.html">Cases last fortnight</a></td><td><a href="recent_rel_peak.html">Cases last fortnight, prop. of peak</a></td></tr>\n')
