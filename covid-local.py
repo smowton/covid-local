@@ -30,9 +30,9 @@ with open(data_path, "r") as f:
       regions[key] = []
     regions[key].append((date_str, date, cases))
 
-def last_7_day_avg(end, recs):
-  start = end - datetime.timedelta(6)
-  return sum(rec[2] for rec in recs if rec[1] <= end and rec[1] >= start) / 7.0
+def seven_day_avg(idx, recs):
+  avg_of = recs[max(idx - 3, 0) : idx + 4]
+  return sum(rec[2] for rec in avg_of) / float(len(avg_of))
 
 def escape(fname):
   return "".join(c if c.isalpha() else "_" for c in fname)
@@ -52,7 +52,7 @@ def pad_series(recs):
 def write_graph(region_name, region_type, records):
   records = sorted(records, key = lambda rec: rec[1])
   records = pad_series(records)
-  records = [(date_str, date, cases, last_7_day_avg(date, records)) for (date_str, date, cases) in records]
+  records = [(date_str, date, cases, seven_day_avg(i, records)) for (i, (date_str, date, cases)) in enumerate(records)]
   first_date = min(rec[1] for rec in records)
   fname = os.path.join(outdir, escape(region_name + " " + region_type))
   fig, ax = plt.subplots(figsize=(12, 8), dpi=100)
