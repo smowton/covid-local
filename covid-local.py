@@ -8,9 +8,14 @@ matplotlib.use('Agg')
 import matplotlib.dates
 import matplotlib.pyplot as plt
 import os.path
+import sys
 
-data_path = "/home/chris/covid-local.csv"
-outdir = "/home/chris/covid-local-site"
+if len(sys.argv) != 2:
+  print >>sys.stderr, "Usage: covid-local.py outdir"
+  sys.exit(1)
+
+outdir = sys.argv[1]
+data_path = os.path.join(outdir, "covid-local.csv")
 
 with open(data_path, "wb") as f:
   subprocess.check_call(["curl", "-L", "https://coronavirus.data.gov.uk/downloads/csv/coronavirus-cases_latest.csv"], stdout=f)
