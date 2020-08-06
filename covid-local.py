@@ -18,7 +18,7 @@ outdir = sys.argv[1]
 data_path = os.path.join(outdir, "covid-local.csv")
 
 with open(data_path, "wb") as f:
-  curl_proc = subprocess.Popen(["curl", "-L", "https://coronavirus.data.gov.uk/downloads/csv/coronavirus-cases_latest.csv"], stdout=subprocess.PIPE)
+  curl_proc = subprocess.Popen(["curl", "-s", "-S", "-L", "https://coronavirus.data.gov.uk/downloads/csv/coronavirus-cases_latest.csv"], stdout=subprocess.PIPE)
   subprocess.check_call(["gzip", "-d"], stdin = curl_proc.stdout, stdout = f)
   assert curl_proc.wait() == 0
 
