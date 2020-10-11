@@ -3,33 +3,61 @@
 import subprocess
 import csv
 import datetime
+import json
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.dates
 import matplotlib.pyplot as plt
 import os.path
 import sys
+import time
 
 if len(sys.argv) != 2:
   print >>sys.stderr, "Usage: covid-local.py outdir"
   sys.exit(1)
 
 outdir = sys.argv[1]
-data_path = os.path.join(outdir, "covid-local.csv")
 
-with open(data_path, "wb") as f:
-  curl_proc = subprocess.Popen(["curl", "-s", "-S", "-L", "https://coronavirus.data.gov.uk/downloads/csv/coronavirus-cases_latest.csv"], stdout=subprocess.PIPE)
-  subprocess.check_call(["gzip", "-d"], stdin = curl_proc.stdout, stdout = f)
+def try_fetch(url):
+  curl_proc = subprocess.Popen(["curl", "-s", "-S", "-L", "-m", "30", url], stdout=subprocess.PIPE)
+  ret = subprocess.check_output(["gzip", "-d"], stdin = curl_proc.stdout)
   assert curl_proc.wait() == 0
+  return ret
+
+def robust_fetch(url):
+  lastfail = None
+  for attempts in range(6):
+    try:
+      return try_fetch(url)
+    except Exception as e:
+      if attempts == 5:
+        print "Fetch", url, "keeps failing; backing off for 10 minutes..."
+        time.sleep(60 * 10)
+      else:
+        print "Fetch", url, "failed; pausing 10 seconds..."
+        time.sleep(10)
+      lastfail = e
+  raise lastfail
+
+def fetch_all(url):
+  data = []
+  while url is not None:
+    result = json.loads(robust_fetch(url))
+    data.extend(result["data"])
+    if "pagination" in result and "next" in result["pagination"] and result["pagination"]["next"] is not None:
+      url = 'https://api.coronavirus.data.gov.uk' + result["pagination"]["next"]
+    else:
+      url = None
+  return data
 
 regions = {}
 
-with open(data_path, "r") as f:
-  reader = csv.DictReader(f)
-  for rec in reader:
-    if len(rec) == 0:
-      continue
-    region_name, region_type, date_str, cases = rec["Area name"], rec["Area type"], rec["Specimen date"], rec["Daily lab-confirmed cases"]
+for region_type in ["nation", "region", "utla", "ltla"]:
+  print "Fetching data for region type '%s'" % region_type
+  alldata = fetch_all('https://api.coronavirus.data.gov.uk/v1/data?format=json&filters=areaType={0}&structure=%7B%22name%22%3A%22areaName%22%2C%20%22cases%22%3A%22newCasesBySpecimenDate%22%2C%20%22date%22%3A%20%22date%22%7D'.format(region_type))
+
+  for rec in alldata:
+    region_name, date_str, cases = rec["name"], rec["date"], rec["cases"]
     date = datetime.datetime.strptime(date_str, '%Y-%m-%d')
     cases = int(cases)
     key = (region_name, region_type)
