@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 import os.path
 import sys
 import time
+import urllib
 
 if len(sys.argv) != 2:
   print >>sys.stderr, "Usage: covid-local.py outdir"
@@ -19,6 +20,7 @@ if len(sys.argv) != 2:
 outdir = sys.argv[1]
 
 def try_fetch(url):
+  print url
   curl_proc = subprocess.Popen(["curl", "-s", "-S", "-L", "-m", "30", url], stdout=subprocess.PIPE)
   ret = subprocess.check_output(["gzip", "-d"], stdin = curl_proc.stdout)
   assert curl_proc.wait() == 0
@@ -39,13 +41,16 @@ def robust_fetch(url):
       lastfail = e
   raise lastfail
 
+def escape(url):
+  return url.replace(" ", "%20").replace("{", "%7B").replace("}", "%7D")
+
 def fetch_all(url):
   data = []
   while url is not None:
     result = json.loads(robust_fetch(url))
     data.extend(result["data"])
     if "pagination" in result and "next" in result["pagination"] and result["pagination"]["next"] is not None:
-      url = 'https://api.coronavirus.data.gov.uk' + result["pagination"]["next"]
+      url = 'https://api.coronavirus.data.gov.uk' + escape(result["pagination"]["next"])
     else:
       url = None
   return data
